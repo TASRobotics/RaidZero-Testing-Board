@@ -4,4 +4,7 @@
     <ReferencePath>
     </ReferencePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DeployDevice>Mini-USB</DeployDevice>
+  </PropertyGroup>
 </Project>
