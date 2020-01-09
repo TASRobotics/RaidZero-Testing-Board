@@ -54,6 +54,9 @@ namespace Testing_Board
             bool rightButtonPrev = false;
             bool leftButtonPrev = false;
             int state = -1;
+            leftTal.ConfigFactoryDefault(0);
+            rightTal.ConfigFactoryDefault(0);
+
             /* loop forever */
 
             while (true)
@@ -123,8 +126,6 @@ namespace Testing_Board
                                 }
                                 else
                                 {
-                                    leftTal.Set(ControlMode.PercentOutput, 0);
-                                    rightTal.Set(ControlMode.PercentOutput, 0);
                                     value1.SetText("OFF");
                                 }
                                 break;
@@ -148,6 +149,8 @@ namespace Testing_Board
                                 break;
                             }
                     }
+
+                    // Toggle buttons to switch state
                     if (rightButton.Read() && !rightButtonPrev)
                     {
                         state++;
@@ -164,6 +167,12 @@ namespace Testing_Board
                     if (state <= -1)
                     {
                         state = NUMBER_OF_STATE - 1;
+                    }
+
+                    if (!dialSwitch.Read() || state != 3)
+                    {
+                        leftTal.Set(ControlMode.PercentOutput, 0);
+                        rightTal.Set(ControlMode.PercentOutput, 0);
                     }
                 }
                 else
