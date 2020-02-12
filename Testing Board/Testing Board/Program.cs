@@ -9,7 +9,7 @@ namespace Testing_Board
 {
     public class Program
     {
-        static readonly int NUMBER_OF_STATE = 5;
+        static readonly int NUMBER_OF_STATE = 6;
 
         static TalonSRX rightTal = new TalonSRX(0);
         static TalonSRX leftTal = new TalonSRX(1);
@@ -19,6 +19,8 @@ namespace Testing_Board
         static InputPort rightButton = new InputPort(CTRE.HERO.IO.Port8.Pin5, false, Port.ResistorMode.PullDown);
         static InputPort dialSwitch = new InputPort(CTRE.HERO.IO.Port8.Pin6, false, Port.ResistorMode.PullDown);
         static DisplayModule display = new DisplayModule(CTRE.HERO.IO.Port1, DisplayModule.OrientationType.Portrait);
+
+        static PWMSpeedController falcon = new PWMSpeedController(CTRE.HERO.IO.Port3.PWM_Pin4);
 
         static Font headerFont = Properties.Resources.GetFont(Properties.Resources.FontResources.VerdanaBold18);
         static Font bodyFont = Properties.Resources.GetFont(Properties.Resources.FontResources.VerdanaReg14);
@@ -56,6 +58,7 @@ namespace Testing_Board
             int state = -1;
             leftTal.ConfigFactoryDefault(0);
             rightTal.ConfigFactoryDefault(0);
+            falcon.Enable();
 
             /* loop forever */
 
@@ -143,6 +146,25 @@ namespace Testing_Board
                                 break;
                             }
 
+                        case 5:
+                            {
+                                title.SetText("Falcon Ctrl");
+                                tal1.SetText("Output:");
+                                tal2.SetText("");
+                                value2.SetText("");
+                                if (dialSwitch.Read())
+                                {
+                                    double motorPower = (motorDial.Read() - 0.5) * 2;
+                                    falcon.Set((float)motorPower);
+                                    value1.SetText(motorPower.ToString());
+                                }
+                                else
+                                {
+                                    value1.SetText("OFF");
+                                }
+                                break;
+                            }
+
                         default: // StartUp Page
                             {
                                 StartUpSetup();
@@ -169,10 +191,17 @@ namespace Testing_Board
                         state = NUMBER_OF_STATE - 1;
                     }
 
-                    if (!dialSwitch.Read() || state != 3)
+                    if (!dialSwitch.Read())
                     {
-                        leftTal.Set(ControlMode.PercentOutput, 0);
-                        rightTal.Set(ControlMode.PercentOutput, 0);
+                        if (state != 3)
+                        {
+                            leftTal.Set(ControlMode.PercentOutput, 0);
+                            rightTal.Set(ControlMode.PercentOutput, 0);
+                        }
+                        if (state != 5)
+                        {
+                            falcon.Set(0);
+                        }
                     }
                 }
                 else
