@@ -29,11 +29,20 @@ namespace Testing_Board.Properties
         {
             return ((Microsoft.SPOT.Font)(Microsoft.SPOT.ResourceUtility.GetObject(ResourceManager, id)));
         }
+        internal static byte[] GetBytes(Resources.BinaryResources id)
+        {
+            return ((byte[])(Microsoft.SPOT.ResourceUtility.GetObject(ResourceManager, id)));
+        }
         [System.SerializableAttribute()]
         internal enum FontResources : short
         {
             VerdanaBold18 = -11745,
             VerdanaReg14 = -3116,
+        }
+        [System.SerializableAttribute()]
+        internal enum BinaryResources : short
+        {
+            ch2 = 27490,
         }
     }
 }

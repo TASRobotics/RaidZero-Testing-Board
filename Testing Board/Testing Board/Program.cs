@@ -1,218 +1,185 @@
 ﻿using Microsoft.SPOT;
-using Microsoft.SPOT.Hardware;
 using CTRE.Gadgeteer.Module;
 using CTRE.Phoenix.MotorControl.CAN;
 using CTRE.Phoenix.MotorControl;
 using CTRE.Phoenix.Sensors;
+using System;
 
 namespace Testing_Board
 {
     public class Program
     {
-        static readonly int NUMBER_OF_STATE = 6;
+        private const int NUMBER_OF_STATE = 6;
 
-        static TalonSRX rightTal = new TalonSRX(0);
-        static TalonSRX leftTal = new TalonSRX(1);
+        private static TalonSRX motor0;
+        private static VictorSPX motor1;
+        private static VictorSPX motor2;
+        private static PWMSpeedController brushlessOutput;
 
-        static AnalogInput motorDial = new AnalogInput(CTRE.HERO.IO.Port8.Analog_Pin3);
-        static InputPort leftButton = new InputPort(CTRE.HERO.IO.Port8.Pin4, false, Port.ResistorMode.PullDown);
-        static InputPort rightButton = new InputPort(CTRE.HERO.IO.Port8.Pin5, false, Port.ResistorMode.PullDown);
-        static InputPort dialSwitch = new InputPort(CTRE.HERO.IO.Port8.Pin6, false, Port.ResistorMode.PullDown);
-        static DisplayModule display = new DisplayModule(CTRE.HERO.IO.Port1, DisplayModule.OrientationType.Portrait);
+        private static ControlPanel control;
+        private static Display display;
 
-        static PWMSpeedController falcon = new PWMSpeedController(CTRE.HERO.IO.Port3.PWM_Pin4);
 
-        static Font headerFont = Properties.Resources.GetFont(Properties.Resources.FontResources.VerdanaBold18);
-        static Font bodyFont = Properties.Resources.GetFont(Properties.Resources.FontResources.VerdanaReg14);
-
-        static DisplayModule.LabelSprite title, value1, value2, tal1, tal2;
-
-        public static void DisplaySetup()
+        /*
+         * Initialize the system
+         */
+        private static void Init()
         {
-            title = display.AddLabelSprite(headerFont, DisplayModule.Color.Green, 5, 0, 120, 24);
-            tal1 = display.AddLabelSprite(bodyFont, DisplayModule.Color.White, 5, 40, 120, 18);
-            value1 = display.AddLabelSprite(bodyFont, DisplayModule.Color.White, 15, 60, 100, 18);
-            tal2 = display.AddLabelSprite(bodyFont, DisplayModule.Color.White, 5, 80, 120, 18);
-            value2 = display.AddLabelSprite(bodyFont, DisplayModule.Color.White, 15, 100, 100, 18);
-        }
+            // Initialize Display
+            control = new ControlPanel();
+            display = new Display();
 
-        public static void StartUpSetup()
-        {
-            title.SetText("Test Board");
-            tal1.SetText("Press Button");
-            value1.SetText("to Start");
-        }
+            motor0 = new TalonSRX(0);
+            motor1 = new VictorSPX(0);
+            motor2 = new VictorSPX(1);
+            brushlessOutput = new PWMSpeedController(CTRE.HERO.IO.Port3.PWM_Pin4);
 
-        public static void MainSetup()
-        {
-            value1.SetText("");
-            value1.SetPosition(15, 60);
+            // Reset Motor Controllers
+            motor0.ConfigFactoryDefault();
+            motor1.ConfigFactoryDefault();
+            motor2.ConfigFactoryDefault();
+            brushlessOutput.Enable();
+            display.Clear();
         }
 
         public static void Main()
         {
-            DisplaySetup();
-            bool start = false;
-            bool rightButtonPrev = false;
-            bool leftButtonPrev = false;
-            int state = -1;
-            leftTal.ConfigFactoryDefault(0);
-            rightTal.ConfigFactoryDefault(0);
-            falcon.Enable();
-
-            /* loop forever */
+            Init();
+            bool inMenu = true;
+            int state = 0;
 
             while (true)
             {
-                if ((rightButton.Read() || leftButton.Read()) && !start)
+                if (inMenu)
                 {
-                    start = true;
-                    MainSetup();
-                }
-
-                if (start)
-                {
-                    switch (state)
-                    {
-                        case 0: // Quadrature
-                            {
-                                leftTal.ConfigSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
-                                rightTal.ConfigSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
-                                title.SetText("Quadrature");
-                                tal1.SetText("LTalon Value:");
-                                value1.SetText(leftTal.GetSelectedSensorPosition().ToString());
-                                tal2.SetText("RTalon Value:");
-                                value2.SetText(rightTal.GetSelectedSensorPosition().ToString());
-                                break;
-                            }
-
-                        case 1: // Analog
-                            {
-                                leftTal.ConfigSelectedFeedbackSensor(FeedbackDevice.Analog);
-                                rightTal.ConfigSelectedFeedbackSensor(FeedbackDevice.Analog);
-                                title.SetText("Analog");
-                                tal1.SetText("LTalon Value:");
-                                value1.SetText(leftTal.GetSelectedSensorPosition().ToString());
-                                tal2.SetText("RTalon Value:");
-                                value2.SetText(rightTal.GetSelectedSensorPosition().ToString());
-                                break;
-                            }
-
-                        case 2: // Limit Switch (only on left tal)
-                            {
-                                leftTal.ConfigForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
-                                leftTal.ConfigReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
-                                title.SetText("Limit Switch");
-                                tal1.SetText("Forward Value:");
-                                int forward = -1;
-                                int reverse = -1;
-                                leftTal.GetSensorCollection().IsFwdLimitSwitchClosed(out forward);
-                                rightTal.GetSensorCollection().IsRevLimitSwitchClosed(out reverse);
-                                value1.SetText(forward.ToString());
-                                tal2.SetText("Reverse Value:");
-                                value2.SetText(reverse.ToString());
-                                break;
-                            }
-
-                        case 3: // Motor Contorl
-                            {
-                                title.SetText("Motor Ctrl");
-                                tal1.SetText("Motor Output:");
-                                tal2.SetText("");
-                                value2.SetText("");
-                                if (dialSwitch.Read())
-                                {
-                                    double motorPower = (motorDial.Read() - 0.5) * 2;
-                                    leftTal.Set(ControlMode.PercentOutput, motorPower);
-                                    rightTal.Set(ControlMode.PercentOutput, motorPower);
-                                    value1.SetText(motorPower.ToString());
-                                }
-                                else
-                                {
-                                    value1.SetText("OFF");
-                                }
-                                break;
-                            }
-
-                        case 4: // Pigeon
-                            {
-                                PigeonIMU leftPidgey = new PigeonIMU(leftTal);
-                                PigeonIMU rightPidgey = new PigeonIMU(rightTal);
-                                title.SetText("PigeonIMU");
-                                tal1.SetText("LPigeon Value:");
-                                value1.SetText(leftPidgey.GetCompassHeading().ToString());
-                                tal2.SetText("RPigeon Value:");
-                                value2.SetText(rightPidgey.GetCompassHeading().ToString());
-                                break;
-                            }
-
-                        case 5:
-                            {
-                                title.SetText("Falcon Ctrl");
-                                tal1.SetText("Output:");
-                                tal2.SetText("");
-                                value2.SetText("");
-                                if (dialSwitch.Read())
-                                {
-                                    double motorPower = (motorDial.Read() - 0.5) * 2;
-                                    falcon.Set((float)motorPower);
-                                    value1.SetText(motorPower.ToString());
-                                }
-                                else
-                                {
-                                    value1.SetText("OFF");
-                                }
-                                break;
-                            }
-
-                        default: // StartUp Page
-                            {
-                                StartUpSetup();
-                                break;
-                            }
-                    }
-
-                    // Toggle buttons to switch state
-                    if (rightButton.Read() && !rightButtonPrev)
+                    // Buttons for selecting the modes
+                    if (control.GetDownButtonPressed())
                     {
                         state++;
+                        if (state >= NUMBER_OF_STATE)
+                        {
+                            state = 0;
+                        }
                     }
-                    else if (leftButton.Read() && !leftButtonPrev)
+                    else if (control.GetUpButtonPressed())
                     {
                         state--;
-                    }
-
-                    if (state >= NUMBER_OF_STATE)
-                    {
-                        state = 0;
-                    }
-                    if (state <= -1)
-                    {
-                        state = NUMBER_OF_STATE - 1;
-                    }
-
-                    if (!dialSwitch.Read())
-                    {
-                        if (state != 3)
+                        if (state <= -1)
                         {
-                            leftTal.Set(ControlMode.PercentOutput, 0);
-                            rightTal.Set(ControlMode.PercentOutput, 0);
-                        }
-                        if (state != 5)
-                        {
-                            falcon.Set(0);
+                            state = NUMBER_OF_STATE - 1;
                         }
                     }
+
+                    // Display Menu and selector
+                    display.DisplayMainMenu();
+                    display.UpdateSelector(state);
                 }
                 else
                 {
-                    StartUpSetup();
+                    switch (state)
+                    {
+                        // Quadrature
+                        case 0: 
+                            {
+                                motor0.ConfigSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
+                                display.DisplayModes(state, new string[] { motor0.GetSelectedSensorPosition().ToString() });
+                                break;
+                            }
+
+                        // Analog
+                        case 1: 
+                            {
+                                motor0.ConfigSelectedFeedbackSensor(FeedbackDevice.Analog);
+                                display.DisplayModes(state, new string[] { motor0.GetSelectedSensorPosition().ToString() });
+                                break;
+                            }
+
+                        // Limit Switch
+                        case 2: 
+                            {
+                                int forward;
+                                int reverse;
+                                motor0.GetSensorCollection().IsFwdLimitSwitchClosed(out forward);
+                                motor0.GetSensorCollection().IsRevLimitSwitchClosed(out reverse);
+                                display.DisplayModes(state, new string[] { forward.ToString(), reverse.ToString() });
+                                break;
+                            }
+
+                        // Pigeon
+                        case 3: 
+                            {
+                                PigeonIMU pidgey = new PigeonIMU(motor0);
+                                display.DisplayModes(state, new string[] { pidgey.GetCompassHeading().ToString() });
+                                break;
+                            }
+
+                        // Brushed Motor Control
+                        case 4: 
+                            {
+                                display.DisplayModes(state, new string[] {
+                                        control.GetMotorSafetySwitch().ToString(),
+                                        control.GetSlider(0).ToString(),
+                                        control.GetSlider(1).ToString(),
+                                        control.GetSlider(2).ToString()
+                                        });
+                                if (control.GetMotorSafetySwitch())
+                                {
+                                    motor0.Set(ControlMode.PercentOutput, control.GetSlider(0));
+                                    motor1.Set(ControlMode.PercentOutput, control.GetSlider(1));
+                                    motor2.Set(ControlMode.PercentOutput, control.GetSlider(2));
+                                }
+                                else
+                                {
+                                    motor0.Set(ControlMode.PercentOutput, 0);
+                                    motor1.Set(ControlMode.PercentOutput, 0);
+                                    motor2.Set(ControlMode.PercentOutput, 0);
+                                }
+                                break;
+                            }
+
+                        // Brushless Motor Control
+                        case 5:
+                            {
+                                display.DisplayModes(state, new string[] {
+                                        control.GetMotorSafetySwitch().ToString(),
+                                        control.GetSlider(0).ToString(),
+                                        });
+                                if (control.GetMotorSafetySwitch())
+                                {
+                                    brushlessOutput.Enable();
+                                    brushlessOutput.Set((float)control.GetSlider(0));
+                                }
+                                else
+                                {
+                                    brushlessOutput.Disable();
+                                }
+                                break;
+                            }
+                    }
+                    CTRE.Phoenix.Watchdog.Feed();
                 }
-                rightButtonPrev = rightButton.Read();
-                leftButtonPrev = leftButton.Read();
-                CTRE.Phoenix.Watchdog.Feed();
+
+                // Buttons for entering desired mode
+                if (control.GetRedButtonPressed())
+                {
+                    inMenu = true;
+                    display.Clear();
+                }
+                else if (control.GetGreenButtonPressed())
+                {
+                    inMenu = false;
+                    display.Clear();
+                    if ((state == 4 || state == 5) && control.GetMotorSafetySwitch())
+                    {
+                        display.Warning();
+                        display.Clear();
+                    }
+                }
+
+                control.UpdateToggle();
+
                 /* wait a bit */
-                System.Threading.Thread.Sleep(20);
+                System.Threading.Thread.Sleep(40);
             }
         }
     }
