@@ -7,7 +7,7 @@ This is the guide for the HERO Board by CTRE. It will cover installation, basic 
 1. Download and install CTRE Phoenix Framework [here](https://www.ctr-electronics.com/hro.html#product_tabs_technical_resources).
 2. Download and install Visual Studio Community 2019 [here](https://visualstudio.microsoft.com/vs/).
    * At somepoint in the process, an image like below would appear. Select the box for .NET desktop development.
-    ![Alt](/img/VS19_select_workloads.JPG)
+    ![Select Workload](./img/VS19_select_workloads.JPG)
 3. Install the VSIX (extension for the libraries)
    * It should be located at ```C:\Users\Public\Documents\Cross The Road Electronics\HERO\Visual Studio Plugin```
    * Install the latest version by double clicking
@@ -20,7 +20,7 @@ This is a tool to update the HERO Board and any other CAN Devices connected to t
 
 To create a project, follow Section 8 of the User Guide. It covers how to write some basic code and points out a few important facts. Below are some key facts to know for this section.
 
-* After the project is created, navigate to the folder where the project is saved (the folder with the .sln file). Create a new txt document and rename it to Directory.Build.props. Open it put these lines in.
+* After the project is created, navigate to the folder where the project is saved (the folder with the .sln file). Copy the file ```Directory.Build.props``` from this repository and put it into the project.
 
     ``` xml
     <Project>
