@@ -18,19 +18,11 @@ This is a tool to update the HERO Board and any other CAN Devices connected to t
 
 ## Getting Started
 
-To create a project, follow Section 8 of the User Guide. It covers how to write some basic code and points out a few important facts. Below are some key facts to know for this section.
+To create a project, follow Section 8 of the User Guide. It covers how to write some basic code and points out a few important facts. Follow Section 9 for specifics on how to code different things. Below are some key facts to know for this section.
 
-* After the project is created, navigate to the folder where the project is saved (the folder with the .sln file). Copy the file ```Directory.Build.props``` from this repository and put it into the project.
+* If you get an error for ```Invalid Option for /langversion```, follow section 11.13.
 
-    ``` xml
-    <Project>
-        <PropertyGroup>
-            <LangVersion>5</LangVersion>
-        </PropertyGroup>
-    </Project>
-    ```
-
-    The reason for this is because Visual Studio 2019 automatically chooses the newest version of C#, but HERO is using an older version, so you have to set the version manually
+    The reason for this is error because Visual Studio 2019 automatically chooses the newest version of C#, but HERO is using an older version, so you have to set the version manually. This should be fixed with the recent update.
 
 * The line ```CTRE.Phoenix.Watchdog.Feed();``` is used as a safety feature for motors. If it is not called, all motors will stop. Figure out a way to implement this to fit your needs. An example is shown below:
 
